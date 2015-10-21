@@ -21,12 +21,16 @@ func ValidateLimitOffset(limit int64, offset int64) bool {
 
 // GenerateURI generates the pagination URI.
 func GenerateURI(limit int64, offset int64) string {
-	return fmt.Sprintf("?limit=%d&offset=%d", limit, offset)
+	return fmt.Sprintf(
+		"?%s=%d&%s=%d",
+		LimitKeyName,
+		limit,
+		OffsetKeyName,
+		offset)
 }
 
 // GetLimitFromRequest returns current limit.
 func GetLimitFromRequest(request *http.Request, defaultLimit int64) int64 {
-
 	var (
 		limit int64
 		err   error
