@@ -18,31 +18,31 @@ import "github.com/ulule/paging"
 
 Now, you can access the package through `paging` namespace.
 
-### GORM Paginator
+It works in three steps:
 
-This package includes a ready-to-go paginator for [GORM](https://github.com/jinzhu/gorm).
+* Create a store (which is basically where your entities are stored);
+* Create a `Paginator` instance with: your store, your HTTP request and your limit;
+* Call the `paginator.Page()` method to get a `paging.Page` instance
 
-To use it, it's fairly simple:
+Example with GORM:
 
 ```go
-
-// For example, you want to paginate a list of users.
+// Before anything... create a slice for your GORM models.
 users := []User{}
 
-// "db" is your database connection pointer.
-// "request" is your HTTP request.
-// "users" is a pointer to your user list.
-// "20" is the default limit.
-paginator := paging.NewGORMPaginator(&db, request, &users, 20)
+// Step 1: create the store. It takes your database connection pointer and a
+// pointer to the slices that will contains your instances.
+store := paging.NewGORMStore(&db, &users)
 
-// That's all. Now, you can get the current page with the Pager.Page() method.
+// Step 2: create a paginator instance and pass your store, your current HTTP
+// request and your limit (number of items per page) as arguments.
+paginator := paging.NewPaginator(store, request, 20)
+
+// Step 3: calls the paginator.Page() method to get the page instance.
 page, err := paginator.Page()
-
-// You can also use the Pager interface methods directly.
-hasPrevious := paginator.HasPrevious()
-previousURL := paginator.Previous()
-hasNext := paginator.HasNext()
-nextURL := pagiantor.Next()
+if err != nil {
+        log.Fatal("Oops")
+}
 ```
 
 ## Contributing
