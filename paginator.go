@@ -1,10 +1,36 @@
 package paging
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/guregu/null"
 )
+
+// -----------------------------------------------------------------------------
+// Options
+// -----------------------------------------------------------------------------
+
+// Options are paginator options.
+type Options struct {
+	// DefaultLimit is the default number of items per page.
+	DefaultLimit int64
+
+	// LimitKeyName is the query string key name for the limit.
+	LimitKeyName string
+
+	// OffsetKeyName is the query string key name for the offset.
+	OffsetKeyName string
+}
+
+// NewOptions returns defaults options.
+func NewOptions() *Options {
+	return &Options{
+		DefaultLimit:  int64(DefaultLimit),
+		LimitKeyName:  DefaultLimitKeyName,
+		OffsetKeyName: DefaultOffsetKeyName,
+	}
+}
 
 // -----------------------------------------------------------------------------
 // Page
@@ -28,6 +54,9 @@ type Paginator struct {
 	// Store is the store that contains entities to paginate.
 	Store Store
 
+	// Options are user options.
+	Options *Options
+
 	// Request is the HTTP request.
 	Request *http.Request
 
@@ -39,6 +68,28 @@ type Paginator struct {
 
 	// Count is the total count of items to paginate.
 	Count int64
+}
+
+// NewPaginator returns a new Paginator instance.
+func NewPaginator(store Store, request *http.Request, options *Options) (*Paginator, error) {
+	if options == nil {
+		options = NewOptions()
+	}
+
+	limit := GetLimitFromRequest(request, options)
+	offset := GetOffsetFromRequest(request, options)
+
+	if !ValidateLimitOffset(limit, offset) {
+		return nil, errors.New("invalid limit or offset")
+	}
+
+	return &Paginator{
+		Store:   store,
+		Options: options,
+		Request: request,
+		Limit:   limit,
+		Offset:  offset,
+	}, nil
 }
 
 // HasPrevious returns true if there is a previous page.
@@ -54,7 +105,7 @@ func (p Paginator) Previous() null.String {
 	if !p.HasPrevious() {
 		return null.NewString("", false)
 	}
-	return null.StringFrom(GenerateURI(p.Limit, (p.Offset - p.Limit)))
+	return null.StringFrom(GenerateURI(p.Limit, (p.Offset - p.Limit), p.Options))
 }
 
 // Next returns the next page URI.
@@ -62,7 +113,7 @@ func (p *Paginator) Next() null.String {
 	if !p.HasNext() {
 		return null.NewString("", false)
 	}
-	return null.StringFrom(GenerateURI(p.Limit, (p.Offset + p.Limit)))
+	return null.StringFrom(GenerateURI(p.Limit, (p.Offset + p.Limit), p.Options))
 }
 
 // HasNext retourns true if has next page.
@@ -75,7 +126,7 @@ func (p Paginator) HasNext() bool {
 
 // Page returns the page instance and fetch items from the store.
 func (p *Paginator) Page() (*Page, error) {
-	if err := p.Store.Paginate(p.Limit, p.Offset, p.Count); err != nil {
+	if err := p.Store.Paginate(p.Limit, p.Offset, &p.Count); err != nil {
 		return nil, err
 	}
 
@@ -84,5 +135,6 @@ func (p *Paginator) Page() (*Page, error) {
 		Offset:   p.Offset,
 		Previous: p.Previous(),
 		Next:     p.Next(),
+		Count:    p.Count,
 	}, nil
 }
