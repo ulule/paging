@@ -1,9 +1,12 @@
 package paging
 
 const (
-	// LimitKeyName is the request key name.
-	LimitKeyName = "limit"
+	// DefaultLimit is the default number of items per page.
+	DefaultLimit = 20
 
-	// OffsetKeyName is the request offset key name.
-	OffsetKeyName = "offset"
+	// DefaultLimitKeyName is the request key name.
+	DefaultLimitKeyName = "limit"
+
+	// DefaultOffsetKeyName is the request offset key name.
+	DefaultOffsetKeyName = "offset"
 )
