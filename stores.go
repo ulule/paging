@@ -42,7 +42,7 @@ func (s *GORMStore) Paginate(limit, offset int64, count *int64) error {
 	q = q.Limit(limit)
 	q = q.Offset(offset)
 
-	if s.options.Order != "" {
+	if s.options != nil && s.options.Order != "" {
 		q = q.Order(s.options.Order)
 	}
 
