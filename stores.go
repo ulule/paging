@@ -15,24 +15,17 @@ type Store interface {
 // GORM Store
 // -----------------------------------------------------------------------------
 
-// GORMOptions are GORM options.
-type GORMOptions struct {
-	Order string
-}
-
 // GORMStore is the store for GORM ORM.
 type GORMStore struct {
-	db      *gorm.DB
-	items   interface{}
-	options *GORMOptions
+	db    *gorm.DB
+	items interface{}
 }
 
 // NewGORMStore returns a new GORM store instance.
-func NewGORMStore(db *gorm.DB, items interface{}, options *GORMOptions) (*GORMStore, error) {
+func NewGORMStore(db *gorm.DB, items interface{}) (*GORMStore, error) {
 	return &GORMStore{
-		db:      db,
-		items:   items,
-		options: options,
+		db:    db,
+		items: items,
 	}, nil
 }
 
@@ -41,11 +34,6 @@ func (s *GORMStore) Paginate(limit, offset int64, count *int64) error {
 	q := s.db
 	q = q.Limit(limit)
 	q = q.Offset(offset)
-
-	if s.options != nil && s.options.Order != "" {
-		q = q.Order(s.options.Order)
-	}
-
 	q = q.Find(s.items)
 	q = q.Limit(-1)
 	q = q.Offset(-1)

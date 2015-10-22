@@ -34,7 +34,10 @@ users := []User{}
 
 // Step 1: create the store. It takes your database connection pointer, a
 // pointer to models and the GORM "ORDER BY" string.
-store := paging.NewGORMStore(&db, &users, "name asc")
+store, err := paging.NewGORMStore(&db, &users)
+if err != nil {
+        log.Fatal(err)
+}
 
 // Step 2: create options. Here, we use the default ones (see below).
 options := paging.NewOptions()
@@ -46,7 +49,7 @@ paginator := paging.NewPaginator(store, request, options)
 // Step 4: calls the paginator.Page() method to get the page instance.
 page, err := paginator.Page()
 if err != nil {
-        log.Fatal("Oops")
+        log.Fatal(err)
 }
 
 // Your page instance contains everything you need.

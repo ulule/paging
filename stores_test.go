@@ -44,7 +44,11 @@ func TestGORMStore(t *testing.T) {
 	request, _ := http.NewRequest("GET", "http://example.com", nil)
 
 	users := []User{}
-	store, err := NewGORMStore(&db, &users, &GORMOptions{Order: "number desc"})
+
+	q := db.Model(&User{})
+	q = q.Order("number desc")
+
+	store, err := NewGORMStore(q, &users)
 	a.Nil(err)
 
 	options := NewOptions()
