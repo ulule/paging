@@ -1,6 +1,6 @@
 package paging
 
-import "github.com/jinzhu/gorm"
+import "github.com/ulule/gorm"
 
 // -----------------------------------------------------------------------------
 // Interfaces
