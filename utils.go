@@ -34,7 +34,7 @@ func GetLimitFromRequest(request *http.Request, options *Options) int64 {
 			limit = options.DefaultLimit
 
 		}
-		if limit > options.MaxLimit {
+		if options.MaxLimit > 0 && limit > options.MaxLimit {
 			limit = options.MaxLimit
 		}
 	} else {

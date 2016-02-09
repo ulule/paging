@@ -23,7 +23,6 @@ func TestGetLimitFromRequest(t *testing.T) {
 	a := assert.New(t)
 
 	options := NewOptions()
-	options.MaxLimit = 100
 
 	// We define a default limit...
 	options.DefaultLimit = 40

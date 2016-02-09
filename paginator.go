@@ -30,7 +30,6 @@ type Options struct {
 func NewOptions() *Options {
 	return &Options{
 		DefaultLimit:  int64(DefaultLimit),
-		MaxLimit:      int64(DefaultMaxLimit),
 		LimitKeyName:  DefaultLimitKeyName,
 		OffsetKeyName: DefaultOffsetKeyName,
 	}
