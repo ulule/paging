@@ -32,6 +32,10 @@ func GetLimitFromRequest(request *http.Request, options *Options) int64 {
 		limit, err = strconv.ParseInt(requestLimit, 10, 64)
 		if err != nil {
 			limit = options.DefaultLimit
+
+		}
+		if options.MaxLimit > 0 && limit > options.MaxLimit {
+			limit = options.MaxLimit
 		}
 	} else {
 		limit = options.DefaultLimit
