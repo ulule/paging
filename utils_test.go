@@ -23,6 +23,7 @@ func TestGetLimitFromRequest(t *testing.T) {
 	a := assert.New(t)
 
 	options := NewOptions()
+	options.MaxLimit = 100
 
 	// We define a default limit...
 	options.DefaultLimit = 40
@@ -46,6 +47,12 @@ func TestGetLimitFromRequest(t *testing.T) {
 	options.LimitKeyName = "perpage"
 	request, _ = http.NewRequest("GET", "http://example.com/?perpage=56", nil)
 	a.Equal(int64(56), GetLimitFromRequest(request, options))
+
+	// We restrict with a max limit
+	options.MaxLimit = 15
+	options.LimitKeyName = "limit"
+	request, _ = http.NewRequest("GET", "http://example.com/?limit=100", nil)
+	a.Equal(int64(15), GetLimitFromRequest(request, options))
 }
 
 func TestGetOffsetFromRequest(t *testing.T) {
