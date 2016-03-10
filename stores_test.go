@@ -77,11 +77,11 @@ func TestGORMStore_Paginator(t *testing.T) {
 	is.False(page.PreviousURI.Valid) // null
 	is.Equal("?limit=20&offset=20", page.NextURI.String)
 
-	// Check order desc
+	// Check order desc.
 	is.Equal(100, users[0].Number)
 
 	//
-	// Next
+	// Next.
 	//
 
 	nextPage, err := page.Next()
@@ -98,7 +98,7 @@ func TestGORMStore_Paginator(t *testing.T) {
 	is.Equal(80, users[0].Number)
 
 	//
-	// Next again
+	// Next again.
 	//
 
 	nextPage, err = nextPage.Next()
@@ -113,6 +113,23 @@ func TestGORMStore_Paginator(t *testing.T) {
 
 	// Check order desc
 	is.Equal(60, users[0].Number)
+
+	//
+	// Now, previous.
+	//
+
+	previousPage, err := nextPage.Previous()
+	is.Nil(err)
+
+	is.Equal(int64(20), previousPage.Limit)
+	is.Equal(len(users), 20)
+	is.Equal(int64(20), previousPage.Offset)
+	is.Equal(int64(100), previousPage.Count)
+	is.Equal("?limit=20&offset=0", previousPage.PreviousURI.String)
+	is.Equal("?limit=20&offset=40", previousPage.NextURI.String)
+
+	// Check order desc
+	is.Equal(80, users[0].Number)
 }
 
 func TestGORMStore_RequestPaginator(t *testing.T) {
