@@ -12,34 +12,130 @@ import (
 	"github.com/ulule/gorm"
 )
 
-type User struct {
-	Number int
-	Name   string
-}
+var (
+	db gorm.DB
+)
 
-func TestGORMStore(t *testing.T) {
-	a := assert.New(t)
+func init() {
+	var err error
 
 	conn, err := sql.Open("sqlite3", "./test.db")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close()
 
-	db, err := gorm.Open("sqlite3", conn)
-	a.Nil(err)
+	db, err = gorm.Open("sqlite3", conn)
+	if err != nil {
+		panic(err)
+	}
+
 	db.LogMode(false)
 	db.DB().SetMaxIdleConns(10)
+}
 
+func rebuildDB() {
 	db.DropTableIfExists(&User{})
 	db.CreateTable(&User{})
-
 	for i := 1; i <= 100; i++ {
 		db.Create(&User{
 			Number: i,
 			Name:   fmt.Sprintf("user-%d", i),
 		})
 	}
+}
+
+type User struct {
+	Number int
+	Name   string
+}
+
+func TestGORMStore_Paginator(t *testing.T) {
+	is := assert.New(t)
+
+	rebuildDB()
+
+	users := []User{}
+
+	q := db.Model(&User{})
+	q = q.Order("number desc")
+
+	store, err := NewGORMStore(q, &users)
+	is.Nil(err)
+
+	options := NewOptions()
+
+	paginator, err := NewPaginator(store, 20, 0, options)
+	is.Nil(err)
+
+	page, err := paginator.Page()
+	is.Nil(err)
+
+	is.Equal(int64(20), page.Limit)
+	is.Equal(len(users), 20)
+	is.Equal(int64(0), page.Offset)
+	is.Equal(int64(100), page.Count)
+	is.False(page.PreviousURI.Valid) // null
+	is.Equal("?limit=20&offset=20", page.NextURI.String)
+
+	// Check order desc.
+	is.Equal(100, users[0].Number)
+
+	//
+	// Next.
+	//
+
+	nextPage, err := page.Next()
+	is.Nil(err)
+
+	is.Equal(int64(20), nextPage.Limit)
+	is.Equal(len(users), 20)
+	is.Equal(int64(20), nextPage.Offset)
+	is.Equal(int64(100), nextPage.Count)
+	is.Equal("?limit=20&offset=0", nextPage.PreviousURI.String)
+	is.Equal("?limit=20&offset=40", nextPage.NextURI.String)
+
+	// Check order desc
+	is.Equal(80, users[0].Number)
+
+	//
+	// Next again.
+	//
+
+	nextPage, err = nextPage.Next()
+	is.Nil(err)
+
+	is.Equal(int64(20), nextPage.Limit)
+	is.Equal(len(users), 20)
+	is.Equal(int64(40), nextPage.Offset)
+	is.Equal(int64(100), nextPage.Count)
+	is.Equal("?limit=20&offset=20", nextPage.PreviousURI.String)
+	is.Equal("?limit=20&offset=60", nextPage.NextURI.String)
+
+	// Check order desc
+	is.Equal(60, users[0].Number)
+
+	//
+	// Now, previous.
+	//
+
+	previousPage, err := nextPage.Previous()
+	is.Nil(err)
+
+	is.Equal(int64(20), previousPage.Limit)
+	is.Equal(len(users), 20)
+	is.Equal(int64(20), previousPage.Offset)
+	is.Equal(int64(100), previousPage.Count)
+	is.Equal("?limit=20&offset=0", previousPage.PreviousURI.String)
+	is.Equal("?limit=20&offset=40", previousPage.NextURI.String)
+
+	// Check order desc
+	is.Equal(80, users[0].Number)
+}
+
+func TestGORMStore_RequestPaginator(t *testing.T) {
+	is := assert.New(t)
+
+	rebuildDB()
 
 	request, _ := http.NewRequest("GET", "http://example.com", nil)
 
@@ -49,45 +145,45 @@ func TestGORMStore(t *testing.T) {
 	q = q.Order("number desc")
 
 	store, err := NewGORMStore(q, &users)
-	a.Nil(err)
+	is.Nil(err)
 
 	options := NewOptions()
 
-	paginator, err := NewPaginator(store, request, options)
-	a.Nil(err)
+	paginator, err := NewRequestPaginator(store, request, options)
+	is.Nil(err)
 
 	page, err := paginator.Page()
-	a.Nil(err)
+	is.Nil(err)
 
-	a.Equal(int64(20), page.Limit)
-	a.Equal(len(users), 20)
-	a.Equal(int64(0), page.Offset)
-	a.Equal(int64(100), page.Count)
-	a.False(page.Previous.Valid) // null
-	a.Equal("?limit=20&offset=20", page.Next.String)
+	is.Equal(int64(20), page.Limit)
+	is.Equal(len(users), 20)
+	is.Equal(int64(0), page.Offset)
+	is.Equal(int64(100), page.Count)
+	is.False(page.PreviousURI.Valid) // null
+	is.Equal("?limit=20&offset=20", page.NextURI.String)
 
 	// Check order desc
-	a.Equal(100, users[0].Number)
+	is.Equal(100, users[0].Number)
 
 	//
 	// Next
 	//
 
-	request, _ = http.NewRequest("GET", page.Next.String, nil)
+	request, _ = http.NewRequest("GET", page.NextURI.String, nil)
 
-	paginator, err = NewPaginator(store, request, options)
-	a.Nil(err)
+	paginator, err = NewRequestPaginator(store, request, options)
+	is.Nil(err)
 
 	page, err = paginator.Page()
-	a.Nil(err)
+	is.Nil(err)
 
-	a.Equal(int64(20), page.Limit)
-	a.Equal(len(users), 20)
-	a.Equal(int64(20), page.Offset)
-	a.Equal(int64(100), page.Count)
-	a.Equal("?limit=20&offset=0", page.Previous.String)
-	a.Equal("?limit=20&offset=40", page.Next.String)
+	is.Equal(int64(20), page.Limit)
+	is.Equal(len(users), 20)
+	is.Equal(int64(20), page.Offset)
+	is.Equal(int64(100), page.Count)
+	is.Equal("?limit=20&offset=0", page.PreviousURI.String)
+	is.Equal("?limit=20&offset=40", page.NextURI.String)
 
 	// Check order desc
-	a.Equal(80, users[0].Number)
+	is.Equal(80, users[0].Number)
 }
