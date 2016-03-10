@@ -22,8 +22,10 @@ It works in four steps:
 
 * Create a store (which is basically where your entities are stored)
 * Create paginator options (or use default ones)
-* Create a `Paginator` instance with: your store, your HTTP request and your options
+* Create a `Paginator` instance with: your store, limit, offset and options
 * Call the `paginator.Page()` method to get a `paging.Page` instance
+* Call the `page.Previous()` method to get the previous page instance
+* Call the `page.Next()` method to get the next page instance
 
 Example with GORM:
 
@@ -44,7 +46,11 @@ options := paging.NewOptions()
 
 // Step 3: create a paginator instance and pass your store, your current HTTP
 // request and your options as arguments.
-paginator := paging.NewPaginator(store, request, options)
+paginator := paging.NewPaginator(store, 20, 0, options)
+
+// You can also use the NewRequestPaginator initializer to auto-handle
+// pagination for a http.Request instance.
+paginator = paging.NewRequestPaginator(store, request, options)
 
 // Step 4: calls the paginator.Page() method to get the page instance.
 page, err := paginator.Page()
@@ -56,12 +62,24 @@ if err != nil {
 assert.True(int64(20), page.Limit)
 assert.True(int64(0), page.Offset)
 assert.True(int64(100), page.Count)
-assert.False(page.Previous.Valid) // It's a null string because no previous page
-assert.True(page.Next.Valid)
-assert.Equal( "?limit=20&offset=20", page.Next.String)
+assert.False(page.PreviousURI.Valid) // It's a null string because no previous page
+assert.True(page.NextURI.Valid)
+assert.Equal( "?limit=20&offset=20", page.NextURI.String)
 
 // And our "users" slice are now populated with 20 users order by name.
 assert.Equal(20, len(users))
+
+// Now get the next page.
+nextPage, err := page.Next()
+if err != nil {
+        log.Fatal(err)
+}
+
+// Or the previous page.
+previousPage, err := page.Previous()
+if err != nil {
+        log.Fatal(err)
+}
 ```
 
 Paginator options are:
