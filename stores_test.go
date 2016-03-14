@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
-	"github.com/ulule/gorm"
 )
 
 var (
-	db gorm.DB
+	db *gorm.DB
 )
 
 func init() {

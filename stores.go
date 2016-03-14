@@ -1,6 +1,6 @@
 package paging
 
-import "github.com/ulule/gorm"
+import "github.com/jinzhu/gorm"
 
 // -----------------------------------------------------------------------------
 // Interfaces
@@ -32,8 +32,8 @@ func NewGORMStore(db *gorm.DB, items interface{}) (*GORMStore, error) {
 // Paginate paginates items from the store and update page instance.
 func (s *GORMStore) Paginate(limit, offset int64, count *int64) error {
 	q := s.db
-	q = q.Limit(limit)
-	q = q.Offset(offset)
+	q = q.Limit(int(limit))
+	q = q.Offset(int(offset))
 	q = q.Find(s.items)
 	q = q.Limit(-1)
 	q = q.Offset(-1)
