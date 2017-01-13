@@ -9,4 +9,7 @@ const (
 
 	// DefaultOffsetKeyName is the request offset key name.
 	DefaultOffsetKeyName = "offset"
+
+	// DefaultCursorKeyName is the request cursor key name.
+	DefaultCursorKeyName = "since"
 )
