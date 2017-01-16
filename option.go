@@ -14,16 +14,28 @@ type Options struct {
 	LimitKeyName string
 	// OffsetKeyName is the query string key name for the offset.
 	OffsetKeyName string
+	// CursorMode set type of cursor, an ID or a Date (time.Time)
+	CursorMode string
 	// CursorKeyName is the query string key name for the offset.
 	CursorKeyName string
+	// CursorBddName is the cursor bdd field name
+	CursorBddName string
+	// CursorStructName is the cursor struct field name
+	CursorStructName string
+	// CursorReverse turn true to work with DESC request
+	CursorReverse bool
 }
 
 // NewOptions returns defaults options.
 func NewOptions() *Options {
 	return &Options{
-		DefaultLimit:  int64(DefaultLimit),
-		LimitKeyName:  DefaultLimitKeyName,
-		OffsetKeyName: DefaultOffsetKeyName,
-		CursorKeyName: DefaultCursorKeyName,
+		DefaultLimit:     int64(DefaultLimit),
+		LimitKeyName:     DefaultLimitKeyName,
+		OffsetKeyName:    DefaultOffsetKeyName,
+		CursorMode:       IDModeCursor,
+		CursorKeyName:    DefaultCursorKeyName,
+		CursorBddName:    DefaultCursorBddName,
+		CursorStructName: DefaultCursorStructName,
+		CursorReverse:    false,
 	}
 }

@@ -3,6 +3,7 @@ package paging
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/guregu/null"
 )
@@ -15,8 +16,8 @@ import (
 type Paginator interface {
 	Page() (interface{}, error)
 	GetItems() interface{}
-	Previous() (interface{}, error)
-	Next() (interface{}, error)
+	Previous() (Paginator, error)
+	Next() (Paginator, error)
 	HasPrevious() bool
 	HasNext() bool
 	MakePreviousURI() null.String
@@ -50,7 +51,7 @@ func (ap *AbstractPaginator) GetItems() interface{} {
 // PaginatorCursor is the paginator with cursor pagination system.
 type PaginatorCursor struct {
 	*AbstractPaginator
-	Cursor int64 `json:"cursor"`
+	Cursor interface{} `json:"cursor"`
 }
 
 // NewPaginatorCursor returns a new PaginatorCursor instance.
@@ -59,7 +60,7 @@ func NewPaginatorCursor(store Store, request *http.Request, options *Options) (*
 		options = NewOptions()
 	}
 
-	return &PaginatorCursor{
+	paginator := &PaginatorCursor{
 		&AbstractPaginator{
 			Store:   store,
 			Options: options,
@@ -67,17 +68,24 @@ func NewPaginatorCursor(store Store, request *http.Request, options *Options) (*
 			Limit:   GetLimitFromRequest(request, options),
 		},
 		GetCursorFromRequest(request, options),
-	}, nil
+	}
+
+	if options.CursorMode == DateModeCursor {
+		paginator.Cursor = time.Unix(0, GetCursorFromRequest(request, options)*1000000000)
+	}
+
+	return paginator, nil
 }
 
 // Page searches and returns the items
 func (p *PaginatorCursor) Page() (interface{}, error) {
-
-	if !ValidateLimitMarker(p.Limit, p.Cursor) {
-		return nil, errors.New("invalid limit or cursor")
-	}
-
-	if err := p.Store.PaginateCursor(p.Limit, p.Cursor, &p.Count); err != nil {
+	err := p.Store.PaginateCursor(
+		p.Limit,
+		p.Cursor,
+		&p.Count,
+		p.Options.CursorBddName,
+		p.Options.CursorReverse)
+	if err != nil {
 		return nil, err
 	}
 
@@ -88,18 +96,37 @@ func (p *PaginatorCursor) Page() (interface{}, error) {
 }
 
 // Previous is not available on cursor system
-func (p *PaginatorCursor) Previous() (interface{}, error) {
+func (p *PaginatorCursor) Previous() (Paginator, error) {
 	return nil, errors.New("No previous page")
 }
 
 // Next returns next items
-func (p *PaginatorCursor) Next() (interface{}, error) {
+func (p *PaginatorCursor) Next() (Paginator, error) {
 	if !p.HasNext() {
 		return nil, errors.New("No next page")
 	}
 
-	// TODO get last of current list or make request
-	return p.GetItems(), nil
+	var err error
+	paginator := *p
+
+	paginator.Cursor, err = Last(p.GetItems(), paginator.Options.CursorStructName)
+	if err != nil {
+		return nil, err
+	}
+
+	err = paginator.Store.PaginateCursor(
+		paginator.Limit,
+		paginator.Cursor,
+		&paginator.Count,
+		paginator.Options.CursorBddName,
+		paginator.Options.CursorReverse)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator.NextURI = p.MakeNextURI()
+
+	return &paginator, nil
 }
 
 // HasPrevious returns false, previous page is not available on cursor system
@@ -109,7 +136,6 @@ func (p *PaginatorCursor) HasPrevious() bool {
 
 // HasNext returns true if has next page.
 func (p *PaginatorCursor) HasNext() bool {
-	// TODO
 	return true
 }
 
@@ -124,8 +150,17 @@ func (p *PaginatorCursor) MakeNextURI() null.String {
 		return null.NewString("", false)
 	}
 
-	// TODO get last of current list or make request
-	return null.StringFrom(GenerateCursorURI(p.Limit, p.Cursor, p.Options))
+	nextCursor, err := Last(p.GetItems(), p.Options.CursorStructName)
+	if err != nil {
+		return null.NewString("", false)
+	}
+
+	// convert to timestamp if cusror mode is Date
+	if p.Options.CursorMode == DateModeCursor {
+		nextCursor = nextCursor.(time.Time).Unix()
+	}
+
+	return null.StringFrom(GenerateCursorURI(p.Limit, nextCursor, p.Options))
 }
 
 // -----------------------------------------------------------------------------
@@ -172,30 +207,43 @@ func (p *PaginatorOffset) Page() (interface{}, error) {
 }
 
 // Previous returns previous items
-func (p *PaginatorOffset) Previous() (interface{}, error) {
-
+func (p *PaginatorOffset) Previous() (Paginator, error) {
 	if !p.HasPrevious() {
 		return nil, errors.New("No previous page")
 	}
 
-	p.Offset = p.Offset - p.Limit
+	paginator := *p
 
-	p.Store.PaginateOffset(p.Limit, p.Offset, &p.Count)
+	paginator.Offset = p.Offset - p.Limit
 
-	return p.GetItems(), nil
+	if err := paginator.Store.PaginateOffset(paginator.Limit, paginator.Offset, &paginator.Count); err != nil {
+		return nil, err
+	}
+
+	paginator.PreviousURI = p.MakePreviousURI()
+	paginator.NextURI = p.MakeNextURI()
+
+	return &paginator, nil
 }
 
 // Next returns next items
-func (p *PaginatorOffset) Next() (interface{}, error) {
+func (p *PaginatorOffset) Next() (Paginator, error) {
 	if !p.HasNext() {
 		return nil, errors.New("No next page")
 	}
 
-	p.Offset = p.Offset + p.Limit
+	paginator := *p
 
-	p.Store.PaginateOffset(p.Limit, p.Offset, &p.Count)
+	paginator.Offset = p.Offset + p.Limit
 
-	return p.GetItems(), nil
+	if err := paginator.Store.PaginateOffset(paginator.Limit, paginator.Offset, &paginator.Count); err != nil {
+		return nil, err
+	}
+
+	paginator.PreviousURI = p.MakePreviousURI()
+	paginator.NextURI = p.MakeNextURI()
+
+	return &paginator, nil
 }
 
 // HasPrevious returns true if there is a previous page.

@@ -3,7 +3,9 @@ package paging
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
+	"time"
 )
 
 // ValidateLimitMarker returns true if limit and offset/cursor values are valid
@@ -97,7 +99,7 @@ func GenerateOffsetURI(limit int64, offset int64, options *Options) string {
 }
 
 // GenerateCursorURI generates the pagination URI for cursor system.
-func GenerateCursorURI(limit int64, cursor int64, options *Options) string {
+func GenerateCursorURI(limit int64, cursor interface{}, options *Options) string {
 	return fmt.Sprintf(
 		"?%s=%d&%s=%d",
 		options.LimitKeyName,
@@ -119,4 +121,32 @@ func GetPaginationType(request *http.Request, options *Options) string {
 	}
 
 	return OffsetType
+}
+
+// Last gets the last element ID value of array.
+func Last(arr interface{}, field string) (interface{}, error) {
+	value := reflect.ValueOf(arr)
+	valueType := value.Type()
+
+	kind := value.Kind()
+	if kind == reflect.Ptr {
+		value = value.Elem()
+		valueType = value.Type()
+		kind = value.Kind()
+	}
+
+	if kind == reflect.Array || kind == reflect.Slice {
+		if value.Len() == 0 {
+			return 0, nil
+		}
+		item := value.Index(value.Len() - 1)
+		cursor := item.FieldByName(field)
+		if cursor.Kind() == reflect.Struct {
+			return cursor.Interface().(time.Time), nil
+		}
+
+		return cursor.Int(), nil
+	}
+
+	return 0, fmt.Errorf("Type %s is not supported by Last", valueType.String())
 }
