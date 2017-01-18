@@ -18,8 +18,8 @@ type Options struct {
 	CursorMode string
 	// CursorKeyName is the query string key name for the offset.
 	CursorKeyName string
-	// CursorBddName is the cursor bdd field name
-	CursorBddName string
+	// CursorDBName is the cursor bdd field name
+	CursorDBName string
 	// CursorStructName is the cursor struct field name
 	CursorStructName string
 	// CursorReverse turn true to work with DESC request
@@ -34,7 +34,7 @@ func NewOptions() *Options {
 		OffsetKeyName:    DefaultOffsetKeyName,
 		CursorMode:       IDModeCursor,
 		CursorKeyName:    DefaultCursorKeyName,
-		CursorBddName:    DefaultCursorBddName,
+		CursorDBName:     DefaultCursorDBName,
 		CursorStructName: DefaultCursorStructName,
 		CursorReverse:    false,
 	}

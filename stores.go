@@ -70,7 +70,7 @@ func (s *GORMStore) PaginateCursor(limit int64, cursor interface{}, count *int64
 	q = q.Find(s.items)
 	q = q.Limit(-1)
 
-	if err := q.Count(count).Error; err != nil {
+	if err := q.Unscoped().Count(count).Error; err != nil {
 		return err
 	}
 

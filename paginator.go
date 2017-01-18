@@ -83,7 +83,7 @@ func (p *PaginatorCursor) Page() (interface{}, error) {
 		p.Limit,
 		p.Cursor,
 		&p.Count,
-		p.Options.CursorBddName,
+		p.Options.CursorDBName,
 		p.Options.CursorReverse)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (p *PaginatorCursor) Next() (Paginator, error) {
 		paginator.Limit,
 		paginator.Cursor,
 		&paginator.Count,
-		paginator.Options.CursorBddName,
+		paginator.Options.CursorDBName,
 		paginator.Options.CursorReverse)
 	if err != nil {
 		return nil, err
