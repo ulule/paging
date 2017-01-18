@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-// ValidateLimitMarker returns true if limit and offset/cursor values are valid
-func ValidateLimitMarker(limit int64, marker int64) bool {
-	values := []int64{limit, marker}
+// ValidateLimitOffset returns true if limit and offset values are valid
+func ValidateLimitOffset(limit int64, offset int64) bool {
+	values := []int64{limit, offset}
 
 	for _, v := range values {
 		if v < 0 {

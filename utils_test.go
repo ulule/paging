@@ -81,9 +81,9 @@ func TestGenerateURI(t *testing.T) {
 	is := assert.New(t)
 
 	options := NewOptions()
-	is.Equal("?limit=10&offset=40", GenerateURI(int64(10), int64(40), options))
+	is.Equal("?limit=10&offset=40", GenerateOffsetURI(int64(10), int64(40), options))
 
 	options.LimitKeyName = "l"
 	options.OffsetKeyName = "o"
-	is.Equal("?l=14&o=60", GenerateURI(int64(14), int64(60), options))
+	is.Equal("?l=14&o=60", GenerateOffsetURI(int64(14), int64(60), options))
 }

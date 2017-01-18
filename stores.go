@@ -35,6 +35,7 @@ func NewGORMStore(db *gorm.DB, items interface{}) (*GORMStore, error) {
 	}, nil
 }
 
+// GetItems return the current result
 func (s *GORMStore) GetItems() interface{} {
 	return s.items
 }

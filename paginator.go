@@ -192,7 +192,7 @@ func NewPaginatorOffset(store Store, request *http.Request, options *Options) (*
 
 // Page searches and returns the items
 func (p *PaginatorOffset) Page() (interface{}, error) {
-	if !ValidateLimitMarker(p.Limit, p.Offset) {
+	if !ValidateLimitOffset(p.Limit, p.Offset) {
 		return nil, errors.New("invalid limit or offset")
 	}
 
