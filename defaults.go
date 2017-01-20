@@ -13,7 +13,7 @@ const (
 	// DefaultCursorKeyName is the request cursor key name.
 	DefaultCursorKeyName = "since"
 
-	// DefaultCursorDBName is the default cursor bdd field name
+	// DefaultCursorDBName is the default cursor db field name
 	DefaultCursorDBName = "id"
 
 	// DefaultCursorStructName is the default cursor struct field name

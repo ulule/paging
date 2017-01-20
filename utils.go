@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
-	"time"
 )
 
 // ValidateLimitOffset returns true if limit and offset values are valid
@@ -74,7 +73,7 @@ func GetCursorFromRequest(request *http.Request, options *Options) int64 {
 		err    error
 	)
 
-	requestCursor := request.URL.Query().Get(options.CursorKeyName)
+	requestCursor := request.URL.Query().Get(options.CursorOptions.KeyName)
 
 	if requestCursor != "" {
 		cursor, err = strconv.ParseInt(requestCursor, 10, 64)
@@ -104,7 +103,7 @@ func GenerateCursorURI(limit int64, cursor interface{}, options *Options) string
 		"?%s=%d&%s=%d",
 		options.LimitKeyName,
 		limit,
-		options.CursorKeyName,
+		options.CursorOptions.KeyName,
 		cursor)
 }
 
@@ -124,7 +123,7 @@ func GetPaginationType(request *http.Request, options *Options) string {
 }
 
 // Last gets the last element ID value of array.
-func Last(arr interface{}, field string) (interface{}, error) {
+func Last(arr interface{}, field string) interface{} {
 	value := reflect.ValueOf(arr)
 	valueType := value.Type()
 
@@ -137,16 +136,12 @@ func Last(arr interface{}, field string) (interface{}, error) {
 
 	if kind == reflect.Array || kind == reflect.Slice {
 		if value.Len() == 0 {
-			return 0, nil
+			return nil
 		}
 		item := value.Index(value.Len() - 1)
 		cursor := item.FieldByName(field)
-		if cursor.Kind() == reflect.Struct {
-			return cursor.Interface().(time.Time), nil
-		}
-
-		return cursor.Int(), nil
+		return cursor.Interface()
 	}
 
-	return 0, fmt.Errorf("Type %s is not supported by Last", valueType.String())
+	panic(fmt.Errorf("Type %s is not supported by Last", valueType.String()))
 }
