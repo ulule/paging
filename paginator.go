@@ -117,17 +117,17 @@ func (p *CursorPaginator) Next() (Paginator, error) {
 }
 
 // HasPrevious returns false, previous page is not available on cursor system
-func (p *CursorPaginator) HasPrevious() bool {
+func (CursorPaginator) HasPrevious() bool {
 	return false
 }
 
 // HasNext returns true if has next page.
-func (p *CursorPaginator) HasNext() bool {
+func (CursorPaginator) HasNext() bool {
 	return true
 }
 
 // MakePreviousURI returns an empty URI.
-func (p *CursorPaginator) MakePreviousURI() null.String {
+func (CursorPaginator) MakePreviousURI() null.String {
 	return null.NewString("", false)
 }
 

@@ -89,6 +89,9 @@ func GetCursorFromRequest(request *http.Request, options *Options) int64 {
 
 // GenerateOffsetURI generates the pagination URI.
 func GenerateOffsetURI(limit int64, offset int64, options *Options) string {
+	if options == nil {
+		return ""
+	}
 	return fmt.Sprintf(
 		"?%s=%d&%s=%d",
 		options.LimitKeyName,
@@ -99,6 +102,9 @@ func GenerateOffsetURI(limit int64, offset int64, options *Options) string {
 
 // GenerateCursorURI generates the pagination URI for cursor system.
 func GenerateCursorURI(limit int64, cursor interface{}, options *Options) string {
+	if options == nil {
+		return ""
+	}
 	return fmt.Sprintf(
 		"?%s=%d&%s=%d",
 		options.LimitKeyName,

@@ -70,5 +70,5 @@ func (s *GORMStore) PaginateCursor(limit int64, cursor interface{}, fieldName st
 	}
 
 	q = q.Find(s.items)
-	return nil
+	return q.Error
 }
