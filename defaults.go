@@ -9,4 +9,13 @@ const (
 
 	// DefaultOffsetKeyName is the request offset key name.
 	DefaultOffsetKeyName = "offset"
+
+	// DefaultCursorKeyName is the request cursor key name.
+	DefaultCursorKeyName = "since"
+
+	// DefaultCursorDBName is the default cursor db field name
+	DefaultCursorDBName = "id"
+
+	// DefaultCursorStructName is the default cursor struct field name
+	DefaultCursorStructName = "ID"
 )

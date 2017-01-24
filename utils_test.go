@@ -77,13 +77,47 @@ func TestGetOffsetFromRequest(t *testing.T) {
 	is.Equal(int64(90), GetOffsetFromRequest(request, options))
 }
 
-func TestGenerateURI(t *testing.T) {
+func TestGetCursorFromRequest(t *testing.T) {
 	is := assert.New(t)
 
 	options := NewOptions()
-	is.Equal("?limit=10&offset=40", GenerateURI(int64(10), int64(40), options))
+
+	// No cursor in URL, we should have 0.
+	request, _ := http.NewRequest("GET", "http://example.com", nil)
+	is.Equal(int64(0), GetCursorFromRequest(request, options))
+
+	// Offset in URL, let's get it.
+	request, _ = http.NewRequest("GET", "http://example.com?since=42", nil)
+	is.Equal(int64(42), GetCursorFromRequest(request, options))
+
+	// If user use a different query string key, we must set the default one.
+	request, _ = http.NewRequest("GET", "http://example.com?offshore=90", nil)
+	is.Equal(int64(0), GetCursorFromRequest(request, options))
+
+	// Now, let's check with a good query string key.
+	options.CursorOptions.KeyName = "mayday"
+	request, _ = http.NewRequest("GET", "http://example.com?mayday=90", nil)
+	is.Equal(int64(90), GetCursorFromRequest(request, options))
+}
+
+func TestGenerateOffsetURI(t *testing.T) {
+	is := assert.New(t)
+
+	options := NewOptions()
+	is.Equal("?limit=10&offset=40", GenerateOffsetURI(int64(10), int64(40), options))
 
 	options.LimitKeyName = "l"
 	options.OffsetKeyName = "o"
-	is.Equal("?l=14&o=60", GenerateURI(int64(14), int64(60), options))
+	is.Equal("?l=14&o=60", GenerateOffsetURI(int64(14), int64(60), options))
+}
+
+func TestGenerateCursorURI(t *testing.T) {
+	is := assert.New(t)
+
+	options := NewOptions()
+	is.Equal("?limit=10&since=40", GenerateCursorURI(int64(10), int64(40), options))
+
+	options.LimitKeyName = "l"
+	options.CursorOptions.KeyName = "o"
+	is.Equal("?l=14&o=60", GenerateCursorURI(int64(14), int64(60), options))
 }

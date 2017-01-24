@@ -1,6 +1,10 @@
 package paging
 
-import "github.com/jinzhu/gorm"
+import (
+	"fmt"
+
+	"github.com/jinzhu/gorm"
+)
 
 // -----------------------------------------------------------------------------
 // Interfaces
@@ -8,7 +12,9 @@ import "github.com/jinzhu/gorm"
 
 // Store is a store.
 type Store interface {
-	Paginate(limit, offset int64, count *int64) error
+	PaginateOffset(limit, offset int64, count *int64) error
+	PaginateCursor(limit int64, cursor interface{}, fieldName string, reverse bool) error
+	GetItems() interface{}
 }
 
 // -----------------------------------------------------------------------------
@@ -29,8 +35,13 @@ func NewGORMStore(db *gorm.DB, items interface{}) (*GORMStore, error) {
 	}, nil
 }
 
-// Paginate paginates items from the store and update page instance.
-func (s *GORMStore) Paginate(limit, offset int64, count *int64) error {
+// GetItems return the current result
+func (s *GORMStore) GetItems() interface{} {
+	return s.items
+}
+
+// PaginateOffset paginates items from the store and update page instance.
+func (s *GORMStore) PaginateOffset(limit, offset int64, count *int64) error {
 	q := s.db
 	q = q.Limit(int(limit))
 	q = q.Offset(int(offset))
@@ -43,4 +54,21 @@ func (s *GORMStore) Paginate(limit, offset int64, count *int64) error {
 	}
 
 	return nil
+}
+
+// PaginateCursor paginates items from the store and update page instance for cursor pagination system.
+// cursor can be an ID or a date (time.Time)
+func (s *GORMStore) PaginateCursor(limit int64, cursor interface{}, fieldName string, reverse bool) error {
+	q := s.db
+
+	q = q.Limit(int(limit))
+
+	if reverse {
+		q = q.Where(fmt.Sprintf("%s < ?", fieldName), cursor)
+	} else {
+		q = q.Where(fmt.Sprintf("%s > ?", fieldName), cursor)
+	}
+
+	q = q.Find(s.items)
+	return q.Error
 }
