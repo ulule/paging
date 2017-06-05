@@ -2,6 +2,7 @@ package paging
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -63,10 +64,20 @@ func (s *GORMStore) PaginateCursor(limit int64, cursor interface{}, fieldName st
 
 	q = q.Limit(int(limit))
 
-	if reverse {
-		q = q.Where(fmt.Sprintf("%s < ?", fieldName), cursor)
-	} else {
-		q = q.Where(fmt.Sprintf("%s > ?", fieldName), cursor)
+	zero := true
+	if i, ok := cursor.(int64); ok && i != 0 {
+		zero = false
+	}
+	if v, ok := cursor.(time.Time); ok && v != time.Unix(0, 0) {
+		zero = false
+	}
+
+	if !zero {
+		if reverse {
+			q = q.Where(fmt.Sprintf("%s < ?", fieldName), cursor)
+		} else {
+			q = q.Where(fmt.Sprintf("%s > ?", fieldName), cursor)
+		}
 	}
 
 	q = q.Find(s.items)
