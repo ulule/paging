@@ -66,7 +66,7 @@ func NewCursorPaginator(store Store, request *http.Request, options *Options) (*
 
 	if options.CursorOptions.Mode == DateModeCursor {
 		// time in cursor is standard timestamp (second)
-		paginator.Cursor = time.Unix(0, GetCursorFromRequest(request, options)*1000000000)
+		paginator.Cursor = time.Unix(0, GetCursorFromRequest(request, options))
 	}
 
 	return paginator, nil
@@ -145,7 +145,7 @@ func (p *CursorPaginator) MakeNextURI() null.String {
 
 	// convert to timestamp if cusror mode is Date
 	if p.Options.CursorOptions.Mode == DateModeCursor {
-		nextCursor = nextCursor.(time.Time).Unix()
+		nextCursor = nextCursor.(time.Time).UnixNano()
 	}
 
 	return null.StringFrom(GenerateCursorURI(p.Limit, nextCursor, p.Options))
