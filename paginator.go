@@ -155,6 +155,10 @@ func (p *CursorPaginator) MakeNextURI() null.String {
 // Paginator with offset
 // -----------------------------------------------------------------------------
 
+// ErrInvalidLimitOrOffset is returned by the OffsetPaginator's Page method to
+// indicate that the limit or the offset is invalid
+var ErrInvalidLimitOrOffset = errors.New("invalid limit or offset")
+
 // OffsetPaginator is the paginator with offset pagination system.
 type OffsetPaginator struct {
 	*paginator
@@ -185,7 +189,7 @@ func NewOffsetPaginator(store Store, request *http.Request, options *Options) (*
 // Page searches and returns the items
 func (p *OffsetPaginator) Page() error {
 	if !ValidateLimitOffset(p.Limit, p.Offset) {
-		return errors.New("invalid limit or offset")
+		return ErrInvalidLimitOrOffset
 	}
 
 	if err := p.Store.PaginateOffset(p.Limit, p.Offset, &p.Count); err != nil {
