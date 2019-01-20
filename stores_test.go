@@ -310,3 +310,18 @@ func TestGORMStore_CursorPaginator_Date(t *testing.T) {
 	is.NotNil(err)
 
 }
+
+func TestGORMStore_PaginateCursor_Count(t *testing.T) {
+	is := assert.New(t)
+	rebuildDB()
+
+	var items []User
+	s := GORMStore{db: db.Model(&User{}), items: &items}
+
+	var count int64
+	is.NoError(s.PaginateCursor(DefaultLimit, 0, DefaultCursorDBName, false, &count))
+	is.Equal(int64(100), count)
+
+	is.NoError(s.PaginateCursor(DefaultLimit, 1, DefaultCursorDBName, false, &count))
+	is.Equal(int64(99), count)
+}

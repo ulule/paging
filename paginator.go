@@ -45,6 +45,7 @@ type CursorPaginator struct {
 	*paginator
 	Cursor      interface{} `json:"-"`
 	PreviousURI null.String `json:"-"`
+	count       int64
 }
 
 // NewCursorPaginator returns a new CursorPaginator instance.
@@ -54,14 +55,14 @@ func NewCursorPaginator(store Store, request *http.Request, options *Options) (*
 	}
 
 	paginator := &CursorPaginator{
-		&paginator{
+		paginator: &paginator{
 			Store:   store,
 			Options: options,
 			Request: request,
 			Limit:   GetLimitFromRequest(request, options),
 		},
-		GetCursorFromRequest(request, options),
-		null.NewString("", false),
+		Cursor:      GetCursorFromRequest(request, options),
+		PreviousURI: null.NewString("", false),
 	}
 
 	if options.CursorOptions.Mode == DateModeCursor {
@@ -78,7 +79,8 @@ func (p *CursorPaginator) Page() error {
 		p.Limit,
 		p.Cursor,
 		p.Options.CursorOptions.DBName,
-		p.Options.CursorOptions.Reverse)
+		p.Options.CursorOptions.Reverse,
+		&p.count)
 	if err != nil {
 		return err
 	}
@@ -106,7 +108,8 @@ func (p *CursorPaginator) Next() (Paginator, error) {
 		np.Limit,
 		np.Cursor,
 		np.Options.CursorOptions.DBName,
-		np.Options.CursorOptions.Reverse)
+		np.Options.CursorOptions.Reverse,
+		&p.count)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +125,8 @@ func (CursorPaginator) HasPrevious() bool {
 }
 
 // HasNext returns true if has next page.
-func (CursorPaginator) HasNext() bool {
-	return true
+func (p *CursorPaginator) HasNext() bool {
+	return p.count > p.Limit
 }
 
 // MakePreviousURI returns an empty URI.
