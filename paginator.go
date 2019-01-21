@@ -66,7 +66,7 @@ func NewCursorPaginator(store Store, request *http.Request, options *Options) (*
 
 	if options.CursorOptions.Mode == DateModeCursor {
 		// time in cursor is standard timestamp (second)
-		paginator.Cursor = time.Unix(0, GetCursorFromRequest(request, options)*1000000000)
+		paginator.Cursor = time.Unix(GetCursorFromRequest(request, options), 0)
 	}
 
 	return paginator, nil
