@@ -45,6 +45,7 @@ type CursorPaginator struct {
 	*paginator
 	Cursor      interface{} `json:"-"`
 	PreviousURI null.String `json:"-"`
+	hasnext     bool
 }
 
 // NewCursorPaginator returns a new CursorPaginator instance.
@@ -54,14 +55,14 @@ func NewCursorPaginator(store Store, request *http.Request, options *Options) (*
 	}
 
 	paginator := &CursorPaginator{
-		&paginator{
+		paginator: &paginator{
 			Store:   store,
 			Options: options,
 			Request: request,
 			Limit:   GetLimitFromRequest(request, options),
 		},
-		GetCursorFromRequest(request, options),
-		null.NewString("", false),
+		Cursor:      GetCursorFromRequest(request, options),
+		PreviousURI: null.NewString("", false),
 	}
 
 	if options.CursorOptions.Mode == DateModeCursor {
@@ -78,7 +79,8 @@ func (p *CursorPaginator) Page() error {
 		p.Limit,
 		p.Cursor,
 		p.Options.CursorOptions.DBName,
-		p.Options.CursorOptions.Reverse)
+		p.Options.CursorOptions.Reverse,
+		&p.hasnext)
 	if err != nil {
 		return err
 	}
@@ -101,12 +103,13 @@ func (p *CursorPaginator) Next() (Paginator, error) {
 	}
 
 	np := *p
-	np.Cursor = Last(p.Store.GetItems(), np.Options.CursorOptions.StructName)
+	np.Cursor = getLastElementField(p.Store.GetItems(), np.Options.CursorOptions.StructName)
 	err := np.Store.PaginateCursor(
 		np.Limit,
 		np.Cursor,
 		np.Options.CursorOptions.DBName,
-		np.Options.CursorOptions.Reverse)
+		np.Options.CursorOptions.Reverse,
+		&np.hasnext)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +125,8 @@ func (CursorPaginator) HasPrevious() bool {
 }
 
 // HasNext returns true if has next page.
-func (CursorPaginator) HasNext() bool {
-	return true
+func (c *CursorPaginator) HasNext() bool {
+	return c.hasnext
 }
 
 // MakePreviousURI returns an empty URI.
@@ -137,7 +140,7 @@ func (p *CursorPaginator) MakeNextURI() null.String {
 		return null.NewString("", false)
 	}
 
-	nextCursor := Last(p.Store.GetItems(), p.Options.CursorOptions.StructName)
+	nextCursor := getLastElementField(p.Store.GetItems(), p.Options.CursorOptions.StructName)
 
 	if nextCursor == nil {
 		return null.NewString("", false)

@@ -287,8 +287,7 @@ func TestGORMStore_CursorPaginator_Date(t *testing.T) {
 	is.Equal(20, users[0].Number)
 
 	np, err = np.Next()
-	is.Nil(err)
-	is.Empty(users)
+	is.Error(err)
 
 	// end with request
 	request, _ = http.NewRequest("GET", "http://example.com?limit=20&since-date=1484646856", nil)
@@ -309,4 +308,21 @@ func TestGORMStore_CursorPaginator_Date(t *testing.T) {
 	is.Nil(pp)
 	is.NotNil(err)
 
+}
+
+func TestGORMStore_PaginateCursor_HasNext(t *testing.T) {
+	is := assert.New(t)
+	rebuildDB()
+
+	var items []User
+	s := GORMStore{db: db.Model(&User{}), items: &items}
+
+	var hasnext bool
+	is.NoError(s.PaginateCursor(99, 0, DefaultCursorDBName, false, &hasnext))
+	is.Equal(99, len(items))
+	is.True(hasnext)
+
+	is.NoError(s.PaginateCursor(100, 0, DefaultCursorDBName, false, &hasnext))
+	is.Equal(100, len(items))
+	is.False(hasnext)
 }

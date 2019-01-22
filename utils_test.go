@@ -121,3 +121,54 @@ func TestGenerateCursorURI(t *testing.T) {
 	options.CursorOptions.KeyName = "o"
 	is.Equal("?l=14&o=60", GenerateCursorURI(int64(14), int64(60), options))
 }
+
+func Test_GetLastElementField(t *testing.T) {
+	last := getLastElementField(
+		[]struct{ Fieldname int }{
+			{Fieldname: 1},
+			{Fieldname: 2},
+			{Fieldname: 3}},
+		"Fieldname")
+	assert.New(t).Equal(3, last)
+}
+
+func Test_GetLastElementField_Int(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatalf("expected panic")
+		}
+		expected := "can't get last element of a value of type int"
+		if r.(string) != expected {
+			t.Fatalf("expected %q, got %q", expected, r)
+		}
+	}()
+	getLastElementField(1, "fieldname")
+}
+
+func Test_GetLastElementField_IntSlice(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatalf("expected panic")
+		}
+		expected := "can't get fieldname \"fieldname\" of an element of type int"
+		if r.(string) != expected {
+			t.Fatalf("expected %q, got %q", expected, r)
+		}
+	}()
+	getLastElementField([]int{1}, "fieldname")
+}
+
+func Test_GetLen(t *testing.T) {
+	assert.New(t).Equal(3, getLen([]int{1, 2, 3}))
+}
+
+func Test_PopLastElement(t *testing.T) {
+	array := &[]int{1, 2, 3}
+	last, remaining := popLastElement(array)
+
+	is := assert.New(t)
+	is.Equal(3, last)
+	is.Equal(&[]int{1, 2}, remaining)
+}

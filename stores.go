@@ -13,7 +13,7 @@ import (
 // Store is a store.
 type Store interface {
 	PaginateOffset(limit, offset int64, count *int64) error
-	PaginateCursor(limit int64, cursor interface{}, fieldName string, reverse bool) error
+	PaginateCursor(limit int64, cursor interface{}, fieldName string, reverse bool, hasnext *bool) error
 	GetItems() interface{}
 }
 
@@ -58,10 +58,10 @@ func (s *GORMStore) PaginateOffset(limit, offset int64, count *int64) error {
 
 // PaginateCursor paginates items from the store and update page instance for cursor pagination system.
 // cursor can be an ID or a date (time.Time)
-func (s *GORMStore) PaginateCursor(limit int64, cursor interface{}, fieldName string, reverse bool) error {
+func (s *GORMStore) PaginateCursor(limit int64, cursor interface{}, fieldName string, reverse bool, hasnext *bool) error {
 	q := s.db
 
-	q = q.Limit(int(limit))
+	q = q.Limit(limit + 1)
 
 	if reverse {
 		q = q.Where(fmt.Sprintf("%s < ?", fieldName), cursor)
@@ -69,6 +69,18 @@ func (s *GORMStore) PaginateCursor(limit int64, cursor interface{}, fieldName st
 		q = q.Where(fmt.Sprintf("%s > ?", fieldName), cursor)
 	}
 
-	q = q.Find(s.items)
-	return q.Error
+	err := q.Find(s.items).Error
+	if err != nil {
+		return err
+	}
+
+	len := getLen(s.items)
+	if int64(len) <= limit {
+		*hasnext = false
+		return nil
+	}
+
+	*hasnext = true
+	_, s.items = popLastElement(s.items)
+	return nil
 }
