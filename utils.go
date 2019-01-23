@@ -128,26 +128,65 @@ func GetPaginationType(request *http.Request, options *Options) string {
 	return OffsetType
 }
 
-// Last gets the last element ID value of array.
-func Last(arr interface{}, field string) interface{} {
-	value := reflect.ValueOf(arr)
-	valueType := value.Type()
-
+func getLastElementField(array interface{}, fieldname string) interface{} {
+	value := reflect.ValueOf(array)
 	kind := value.Kind()
 	if kind == reflect.Ptr {
 		value = value.Elem()
-		valueType = value.Type()
 		kind = value.Kind()
 	}
 
-	if kind == reflect.Array || kind == reflect.Slice {
-		if value.Len() == 0 {
-			return nil
-		}
-		item := value.Index(value.Len() - 1)
-		cursor := item.FieldByName(field)
-		return cursor.Interface()
+	if kind != reflect.Array && kind != reflect.Slice {
+		panic(fmt.Sprintf("can't get last element of a value of type %T", array))
 	}
 
-	panic(fmt.Errorf("Type %s is not supported by Last", valueType.String()))
+	if value.Len() == 0 {
+		return nil
+	}
+
+	last := value.Index(value.Len() - 1)
+	if last.Kind() != reflect.Struct {
+		panic(fmt.Sprintf("can't get fieldname %q of an element of type %T", fieldname, last.Interface()))
+	}
+
+	return last.FieldByName(fieldname).Interface()
+}
+
+func getLen(array interface{}) int {
+	value := reflect.ValueOf(array)
+	kind := value.Kind()
+	if kind == reflect.Ptr {
+		value = value.Elem()
+		kind = value.Kind()
+	}
+
+	if kind != reflect.Array && kind != reflect.Slice {
+		panic(fmt.Sprintf("can't get len of a value of type %T", array))
+	}
+
+	return value.Len()
+}
+
+func popLastElement(arrayPtr interface{}) (last, remaining interface{}) {
+	ptr := reflect.ValueOf(arrayPtr)
+	if ptr.Kind() != reflect.Ptr {
+		panic(fmt.Sprintf("expected pointer type, got %T", arrayPtr))
+	}
+
+	array := ptr.Elem()
+	if array.Kind() != reflect.Array && array.Kind() != reflect.Slice {
+		panic(fmt.Sprintf("can't pop last element of a value of type %T", arrayPtr))
+	}
+
+	len := array.Len()
+	if len == 0 {
+		return nil, arrayPtr
+	}
+
+	last = array.Index(len - 1).Interface()
+
+	array.Set(array.Slice(0, len-1))
+	remaining = array.Addr().Interface()
+
+	return last, remaining
 }
