@@ -146,9 +146,21 @@ func (p *CursorPaginator) MakeNextURI() null.String {
 		return null.NewString("", false)
 	}
 
-	// convert to timestamp if cusror mode is Date
+	// convert to timestamp
 	if p.Options.CursorOptions.Mode == DateModeCursor {
-		nextCursor = nextCursor.(time.Time).Unix()
+		timestamp := nextCursor.(time.Time).Unix()
+		if !p.Options.CursorOptions.Reverse {
+			// The next cursor must be the timestamp of the last item incremented by one.
+			// Otherwise, we would get duplicates as the last item of the current page would be included
+			// in the next page.
+			// One problem with this approach is that we may lose items if two items are within the same
+			// second. If items A and B are within the same second and A is the last item in the page,
+			// the next cursor will be the timestamp of A incremented by one, and the next page won't
+			// contain B.
+			// TODO: The (non-backward-compatible) solution is to increase the precision of timestamps
+			timestamp++
+		}
+		nextCursor = timestamp
 	}
 
 	return null.StringFrom(GenerateCursorURI(p.Limit, nextCursor, p.Options))
