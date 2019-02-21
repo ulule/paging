@@ -310,6 +310,25 @@ func TestGORMStore_CursorPaginator_Date(t *testing.T) {
 
 }
 
+func TestGORMStore_PaginateCursor_Reverse(t *testing.T) {
+	is := assert.New(t)
+	rebuildDB()
+
+	var items []User
+	s := GORMStore{db: db.Model(&User{}), items: &items}
+
+	var hasnext bool
+	is.NoError(s.PaginateCursor(2, 50, DefaultCursorDBName, false, &hasnext))
+	is.Equal(2, len(items))
+	is.Equal(items[0].Number, items[1].Number-1)
+	is.True(hasnext)
+
+	is.NoError(s.PaginateCursor(2, 50, DefaultCursorDBName, true, &hasnext))
+	is.Equal(2, len(items))
+	is.Equal(items[0].Number-1, items[1].Number)
+	is.True(hasnext)
+}
+
 func TestGORMStore_PaginateCursor_HasNext(t *testing.T) {
 	is := assert.New(t)
 	rebuildDB()
