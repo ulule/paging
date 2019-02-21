@@ -69,7 +69,11 @@ func (s *GORMStore) PaginateCursor(limit int64, cursor interface{}, fieldName st
 		q = q.Where(fmt.Sprintf("%s > ?", fieldName), cursor)
 	}
 
-	err := q.Find(s.items).Error
+	if reverse {
+		fieldName = fmt.Sprintf("%s %s", fieldName, "desc")
+	}
+
+	err := q.Order(fieldName).Find(s.items).Error
 	if err != nil {
 		return err
 	}
