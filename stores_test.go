@@ -40,15 +40,14 @@ func rebuildDB() {
 	db.DropTableIfExists(&User{})
 	db.CreateTable(&User{})
 	timeRef := time.Unix(0, refDate*1000000000)
-	min := 100
-	for i := 1; i <= 100; i++ {
+	for i := 0; i < 100; i++ {
 		db.Create(&User{
-			ID:           i,
-			Number:       i,
-			Name:         fmt.Sprintf("user-%d", i),
-			DateCreation: timeRef.Add(time.Duration(-min) * time.Minute),
+			ID:           i + 1,
+			Number:       i + 1,
+			Name:         fmt.Sprintf("user-%d", i+1),
+			DateCreation: timeRef.Add(time.Duration(i-100) * time.Minute),
+			DateUpdated:  timeRef.Add(time.Duration(-1-i) * time.Minute),
 		})
-		min = min - 1
 	}
 }
 
@@ -57,6 +56,7 @@ type User struct {
 	Number       int
 	Name         string
 	DateCreation time.Time
+	DateUpdated  time.Time
 }
 
 func TestGORMStore_OffsetPaginator(t *testing.T) {
@@ -208,7 +208,7 @@ func TestGORMStore_CursorPaginator(t *testing.T) {
 	is.Equal(41, users[0].Number)
 }
 
-func TestGORMStore_CursorPaginator_Date(t *testing.T) {
+func TestGORMStore_CursorPaginator_DateCreation(t *testing.T) {
 	is := assert.New(t)
 
 	rebuildDB()
@@ -286,11 +286,113 @@ func TestGORMStore_CursorPaginator_Date(t *testing.T) {
 	is.Nil(err)
 	is.Equal(20, users[0].Number)
 
-	np, err = np.Next()
+	_, err = np.Next()
 	is.Error(err)
 
 	// end with request
 	request, _ = http.NewRequest("GET", "http://example.com?limit=20&since-date=1484646856", nil)
+
+	paginator, err = NewCursorPaginator(store, request, options)
+	is.Nil(err)
+
+	err = paginator.Page()
+	is.Nil(err)
+	is.False(paginator.NextURI.Valid) // null
+	is.Empty(users)
+
+	// //
+	// // test previous
+	// //
+
+	pp, err := nextPaginator.Previous()
+	is.Nil(pp)
+	is.NotNil(err)
+
+}
+
+func TestGORMStore_CursorPaginator_DateUpdated(t *testing.T) {
+	is := assert.New(t)
+
+	rebuildDB()
+
+	request, _ := http.NewRequest("GET", fmt.Sprintf("http://example.com?limit=20&updated_before=%d", refDate), nil)
+
+	users := []User{}
+
+	q := db.Model(&User{})
+	q = q.Order("date_updated desc")
+
+	store, err := NewGORMStore(q, &users)
+	is.Nil(err)
+
+	options := NewOptions()
+	options.CursorOptions.Mode = DateModeCursor
+	options.CursorOptions.DBName = "date_updated"
+	options.CursorOptions.StructName = "DateUpdated"
+	options.CursorOptions.KeyName = "updated_before"
+	options.CursorOptions.Reverse = true
+
+	paginator, err := NewCursorPaginator(store, request, options)
+	is.Nil(err)
+	err = paginator.Page()
+	is.Nil(err)
+
+	is.Equal(int64(20), paginator.Limit)
+	is.Equal(len(users), 20)
+	is.False(paginator.PreviousURI.Valid) // null
+	is.Equal("?limit=20&updated_before=1484651656", paginator.NextURI.String)
+	is.Equal(1, users[0].Number)
+
+	// //
+	// // Next
+	// //
+
+	request, _ = http.NewRequest("GET", paginator.NextURI.String, nil)
+
+	paginator, err = NewCursorPaginator(store, request, options)
+	is.Nil(err)
+
+	err = paginator.Page()
+	is.Nil(err)
+
+	is.Equal(int64(20), paginator.Limit)
+	is.Equal(len(users), 20)
+	is.False(paginator.PreviousURI.Valid) // null
+	is.Equal("?limit=20&updated_before=1484650456", paginator.NextURI.String)
+	is.Equal(21, users[0].Number)
+
+	// //
+	// // Next again
+	// //
+
+	np, err := paginator.Next()
+	is.Nil(err)
+	nextPaginator := np.(*CursorPaginator)
+
+	is.Equal(int64(20), nextPaginator.Limit)
+	is.Equal(len(users), 20)
+	is.False(nextPaginator.PreviousURI.Valid) // null
+	is.Equal("?limit=20&updated_before=1484649256", nextPaginator.NextURI.String)
+	is.Equal(41, users[0].Number)
+
+	// //
+	// // End of cursor
+	// //
+
+	// end with next
+	np, err = paginator.Next()
+	is.Nil(err)
+	is.Equal(61, users[0].Number)
+
+	np, err = np.Next()
+	is.Nil(err)
+	is.Equal(81, users[0].Number)
+
+	_, err = np.Next()
+	is.Error(err)
+
+	// end with request
+	request, _ = http.NewRequest("GET", "http://example.com?limit=20&updated_before=1484646856", nil)
 
 	paginator, err = NewCursorPaginator(store, request, options)
 	is.Nil(err)
