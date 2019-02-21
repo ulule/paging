@@ -207,7 +207,13 @@ func (p *OffsetPaginator) Page() error {
 		return ErrInvalidLimitOrOffset
 	}
 
-	if err := p.Store.PaginateOffset(p.Limit, p.Offset, &p.Count); err != nil {
+	err := p.Store.PaginateOffset(
+		p.Limit,
+		p.Offset,
+		p.Options.CursorOptions.DBName,
+		p.Options.CursorOptions.Reverse,
+		&p.Count)
+	if err != nil {
 		return err
 	}
 
@@ -227,7 +233,13 @@ func (p *OffsetPaginator) Previous() (Paginator, error) {
 
 	paginator.Offset = p.Offset - p.Limit
 
-	if err := paginator.Store.PaginateOffset(paginator.Limit, paginator.Offset, &paginator.Count); err != nil {
+	err := paginator.Store.PaginateOffset(
+		paginator.Limit,
+		paginator.Offset,
+		paginator.Options.CursorOptions.DBName,
+		paginator.Options.CursorOptions.Reverse,
+		&paginator.Count)
+	if err != nil {
 		return nil, err
 	}
 
@@ -247,7 +259,13 @@ func (p *OffsetPaginator) Next() (Paginator, error) {
 
 	paginator.Offset = p.Offset + p.Limit
 
-	if err := paginator.Store.PaginateOffset(paginator.Limit, paginator.Offset, &paginator.Count); err != nil {
+	err := paginator.Store.PaginateOffset(
+		paginator.Limit,
+		paginator.Offset,
+		paginator.Options.CursorOptions.DBName,
+		paginator.Options.CursorOptions.Reverse,
+		&paginator.Count)
+	if err != nil {
 		return nil, err
 	}
 

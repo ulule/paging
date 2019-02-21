@@ -12,7 +12,7 @@ import (
 
 // Store is a store.
 type Store interface {
-	PaginateOffset(limit, offset int64, count *int64) error
+	PaginateOffset(limit, offset int64, fieldName string, reverse bool, count *int64) error
 	PaginateCursor(limit int64, cursor interface{}, fieldName string, reverse bool, hasnext *bool) error
 	GetItems() interface{}
 }
@@ -41,15 +41,20 @@ func (s *GORMStore) GetItems() interface{} {
 }
 
 // PaginateOffset paginates items from the store and update page instance.
-func (s *GORMStore) PaginateOffset(limit, offset int64, count *int64) error {
+func (s *GORMStore) PaginateOffset(limit, offset int64, fieldName string, reverse bool, count *int64) error {
+	if reverse {
+		fieldName = fmt.Sprintf("%s %s", fieldName, "desc")
+	}
+
 	q := s.db
 	q = q.Limit(int(limit))
 	q = q.Offset(int(offset))
-	q = q.Find(s.items)
+	q = q.Order(fieldName).Find(s.items)
+
 	q = q.Limit(-1)
 	q = q.Offset(-1)
 
-	if err := q.Count(count).Error; err != nil {
+	if err := q.Order(fieldName).Count(count).Error; err != nil {
 		return err
 	}
 
