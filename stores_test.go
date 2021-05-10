@@ -131,6 +131,25 @@ func TestGORMStore_OffsetPaginator(t *testing.T) {
 
 	// Check order desc
 	is.Equal(100, users[0].Number)
+
+	// Modify default limit
+	options.SetDefaultLimit(10)
+	request, _ = http.NewRequest("GET", paginator.PreviousURI.String, nil)
+	paginator, err = NewOffsetPaginator(store, request, options)
+	is.Nil(err)
+
+	err = paginator.Page()
+	is.Nil(err)
+
+	is.Equal(int64(10), paginator.Limit)
+	is.Equal(len(users), 10)
+	is.Equal(int64(0), paginator.Offset)
+	is.Equal(int64(100), paginator.Count)
+	is.False(paginator.PreviousURI.Valid) // null
+	is.Equal("?limit=10&offset=10", paginator.NextURI.String)
+
+	// Check order desc
+	is.Equal(100, users[0].Number)
 }
 
 func TestGORMStore_CursorPaginator(t *testing.T) {

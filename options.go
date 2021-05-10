@@ -47,3 +47,8 @@ func NewOptions() *Options {
 		},
 	}
 }
+
+func (o *Options) SetDefaultLimit(limit int64) *Options{
+	o.DefaultLimit = limit
+	return o
+}
